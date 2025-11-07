@@ -1,7 +1,18 @@
-venv/
-data/
+# Create .gitignore file
+echo "data/
 *.csv
-*.ipynb_checkpoints/
+.ipynb_checkpoints/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
 .env
+*.egg-info/
+dist/
+build/
+.DS_Store
+Thumbs.db" > .gitignore
