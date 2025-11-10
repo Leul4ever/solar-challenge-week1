@@ -2,26 +2,39 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
+import numpy as np
+from scipy import stats
 
 # Page configuration
 st.set_page_config(
-    page_title="Solar Energy Dashboard",
+    page_title="Solar Energy Analytics Dashboard",
     page_icon="☀️",
     layout="wide"
 )
 
 # Title
-st.title("☀️ Solar Energy Dashboard")
-st.markdown("Compare solar energy metrics across countries")
+st.title("☀️ Solar Energy Analytics Dashboard")
+st.markdown("Advanced analysis and comparison of solar energy metrics across countries")
 
-# Sidebar for country selection
-st.sidebar.header("Country Selection")
+# Sidebar for controls
+st.sidebar.header("🔧 Analytics Mode")
+
+# Country selection
+st.sidebar.subheader("Select Countries")
 countries = ["Benin", "Togo", "Sierra Leone"]
 selected_countries = st.sidebar.multiselect(
-    "Select Countries to Compare",
+    "Choose countries to compare:",
     countries,
-    default=["Benin"]
+    default=countries
+)
+
+# Metric selection
+st.sidebar.subheader("Select Metrics")
+metrics = ["GHI", "DNI", "DHI", "Tamb", "WS"]
+selected_metrics = st.sidebar.multiselect(
+    "Choose metrics to analyze:",
+    metrics,
+    default=["GHI", "DNI"]
 )
 
 # Data loading function
@@ -36,140 +49,228 @@ def load_data(country):
         return df
     except FileNotFoundError:
         st.error(f"❌ Data file not found: {file_path}")
-        st.info(f"💡 Make sure '{file_name}' exists in the 'data' folder")
         return None
 
-# Main content area
-if selected_countries:
+# Main content
+if selected_countries and selected_metrics:
+    
+    # Load data for all selected countries
+    country_data = {}
+    available_metrics = set()
+    
+    for country in selected_countries:
+        df = load_data(country)
+        if df is not None:
+            country_data[country] = df
+            # Find which of the selected metrics are available
+            for metric in selected_metrics:
+                if metric in df.columns:
+                    available_metrics.add(metric)
+    
+    if not available_metrics:
+        st.error("❌ None of the selected metrics are available in the data")
+        st.stop()
+    
+    # Convert back to list for ordering
+    available_metrics = [m for m in selected_metrics if m in available_metrics]
+    
+    # Two main columns
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.header("📊 Solar Irradiance Distribution")
+        st.header("📊 Country Comparison")
         
-        # Check for different possible column names
-        irradiance_data = []
-        labels = []
-        irradiance_col = None
-        
-        for country in selected_countries:
-            df = load_data(country)
-            if df is not None:
-                # Look for irradiance columns (GHI or GHT)
-                if 'GHI' in df.columns:
-                    irradiance_col = 'GHI'
-                elif 'GHT' in df.columns:
-                    irradiance_col = 'GHT'
-                
-                if irradiance_col and irradiance_col in df.columns:
-                    irradiance_data.append(df[irradiance_col].dropna())
-                    labels.append(country)
-        
-        if irradiance_data and irradiance_col:
-            # Create boxplot
-            fig, ax = plt.subplots(figsize=(10, 6))
-            ax.boxplot(irradiance_data, labels=labels)
-            ax.set_ylabel(f'{irradiance_col} (W/m²)')
-            ax.set_title(f'{irradiance_col} Distribution by Country')
-            ax.grid(True, alpha=0.3)
-            st.pyplot(fig)
+        # Distribution plots for each selected metric
+        for metric in available_metrics:
+            st.subheader(f"{metric} Distribution")
             
-            # Show which column is being used
-            st.info(f"📊 Displaying {irradiance_col} data")
-        else:
-            st.warning("No irradiance data columns found (looking for GHI or GHT)")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            plot_data = []
+            labels = []
+            
+            for country in selected_countries:
+                if country in country_data and metric in country_data[country].columns:
+                    data = country_data[country][metric].dropna()
+                    if len(data) > 0:
+                        plot_data.append(data)
+                        labels.append(country)
+            
+            if plot_data:
+                # Create boxplot
+                box_plot = ax.boxplot(plot_data, labels=labels, patch_artist=True)
+                
+                # Add colors to boxes
+                colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
+                for patch, color in zip(box_plot['boxes'], colors):
+                    patch.set_facecolor(color)
+                
+                ax.set_ylabel(f'{metric} Value')
+                ax.set_title(f'{metric} Distribution by Country')
+                ax.grid(True, alpha=0.3)
+                plt.xticks(rotation=45)
+                
+                st.pyplot(fig)
+            else:
+                st.warning(f"No {metric} data available for selected countries")
     
     with col2:
-        st.header("🏆 Top Regions")
+        st.header("🏆 Performance Rankings")
         
-        # Display top regions table for first selected country
-        if selected_countries:
-            df = load_data(selected_countries[0])
-            if df is not None:
-                # Look for region/location columns
-                region_cols = [col for col in df.columns 
-                              if any(keyword in col.lower() 
-                                    for keyword in ['region', 'location', 'site', 'station'])]
-                
-                # Determine which irradiance column to use
-                irradiance_col = None
-                if 'GHI' in df.columns:
-                    irradiance_col = 'GHI'
-                elif 'GHT' in df.columns:
-                    irradiance_col = 'GHT'
-                
-                if region_cols and irradiance_col:
-                    region_col = region_cols[0]
-                    top_regions = (df.groupby(region_col)[irradiance_col]
-                                  .mean()
-                                  .sort_values(ascending=False)
-                                  .head(10)
-                                  .reset_index())
-                    top_regions.columns = ['Region', f'Average {irradiance_col} (W/m²)']
-                    st.dataframe(top_regions, use_container_width=True)
-                else:
-                    # Sample data if no region column found
-                    sample_data = {
-                        'Region': [f'Region {chr(65+i)}' for i in range(5)],
-                        'Average GHI (W/m²)': [485.2, 467.8, 452.3, 438.9, 425.1]
+        # Create performance comparison table
+        performance_data = []
+        for country in selected_countries:
+            if country in country_data:
+                country_stats = {'Country': country}
+                for metric in available_metrics:
+                    if metric in country_data[country].columns:
+                        data = country_data[country][metric].dropna()
+                        if len(data) > 0:
+                            country_stats[f'{metric} Mean'] = f"{data.mean():.2f}"
+                            country_stats[f'{metric} Max'] = f"{data.max():.2f}"
+                performance_data.append(country_stats)
+        
+        if performance_data:
+            performance_df = pd.DataFrame(performance_data)
+            st.dataframe(performance_df, use_container_width=True)
+    
+    # Summary Statistics Section
+    st.header("📈 Summary Statistics")
+    
+    for metric in available_metrics:
+        st.subheader(f"{metric} Statistical Summary")
+        
+        stats_data = []
+        for country in selected_countries:
+            if country in country_data and metric in country_data[country].columns:
+                data = country_data[country][metric].dropna()
+                if len(data) > 0:
+                    stats_row = {
+                        'Country': country,
+                        'count': len(data),
+                        'mean': f"{data.mean():.2f}",
+                        'std': f"{data.std():.2f}",
+                        'min': f"{data.min():.2f}",
+                        '25%': f"{np.percentile(data, 25):.2f}",
+                        '50%': f"{np.percentile(data, 50):.2f}",
+                        '75%': f"{np.percentile(data, 75):.2f}",
+                        'max': f"{data.max():.2f}"
                     }
-                    st.dataframe(pd.DataFrame(sample_data), use_container_width=True)
-                    st.info("💡 Sample data shown - add region columns to your CSV for actual regional analysis")
+                    stats_data.append(stats_row)
+        
+        if stats_data:
+            stats_df = pd.DataFrame(stats_data)
+            st.dataframe(stats_df, use_container_width=True)
+        else:
+            st.warning(f"No {metric} data available for statistical analysis")
     
-    # Additional metrics section
-    st.header("📈 Country Metrics")
+    # Statistical Tests Section
+    st.header("🔬 Statistical Tests")
     
-    metrics_cols = st.columns(len(selected_countries))
+    col_test1, col_test2 = st.columns(2)
     
-    for idx, country in enumerate(selected_countries):
-        df = load_data(country)
-        if df is not None:
-            with metrics_cols[idx]:
-                st.subheader(country)
-                
-                # Determine which irradiance column to use
-                irradiance_col = None
-                if 'GHI' in df.columns:
-                    irradiance_col = 'GHI'
-                elif 'GHT' in df.columns:
-                    irradiance_col = 'GHT'
-                
-                if irradiance_col and irradiance_col in df.columns:
-                    irradiance = df[irradiance_col]
-                    st.metric(f"Average {irradiance_col}", f"{irradiance.mean():.1f} W/m²")
-                    st.metric(f"Max {irradiance_col}", f"{irradiance.max():.1f} W/m²")
-                    st.metric("Data Points", len(irradiance))
-                else:
-                    st.metric("Data Points", len(df))
-                    st.warning(f"No {irradiance_col} data found")
+    with col_test1:
+        st.subheader("ANOVA Test")
+        
+        for metric in available_metrics:
+            test_data = []
+            for country in selected_countries:
+                if country in country_data and metric in country_data[country].columns:
+                    data = country_data[country][metric].dropna()
+                    if len(data) > 0:
+                        test_data.append(data)
+            
+            if len(test_data) >= 2:
+                try:
+                    # Perform ANOVA
+                    f_stat, p_value = stats.f_oneway(*test_data)
+                    
+                    st.write(f"**{metric} ANOVA Results:**")
+                    st.write(f"F-statistic: {f_stat:.4f}")
+                    st.write(f"p-value: {p_value:.4f}")
+                    
+                    # Interpretation
+                    if p_value < 0.05:
+                        st.success("✅ Significant differences exist between countries (p < 0.05)")
+                    else:
+                        st.info("ℹ️ No significant differences between countries (p ≥ 0.05)")
+                    
+                    st.markdown("---")
+                    
+                except Exception as e:
+                    st.error(f"Error performing ANOVA for {metric}: {str(e)}")
+    
+    with col_test2:
+        st.subheader("Kruskal-Wallis Test")
+        
+        for metric in available_metrics:
+            test_data = []
+            for country in selected_countries:
+                if country in country_data and metric in country_data[country].columns:
+                    data = country_data[country][metric].dropna()
+                    if len(data) > 0:
+                        test_data.append(data)
+            
+            if len(test_data) >= 2:
+                try:
+                    # Perform Kruskal-Wallis test
+                    h_stat, p_value = stats.kruskal(*test_data)
+                    
+                    st.write(f"**{metric} Kruskal-Wallis Results:**")
+                    st.write(f"H-statistic: {h_stat:.4f}")
+                    st.write(f"p-value: {p_value:.4f}")
+                    
+                    # Interpretation
+                    if p_value < 0.05:
+                        st.success("✅ Significant differences exist between countries (p < 0.05)")
+                    else:
+                        st.info("ℹ️ No significant differences between countries (p ≥ 0.05)")
+                    
+                    st.markdown("---")
+                    
+                except Exception as e:
+                    st.error(f"Error performing Kruskal-Wallis test for {metric}: {str(e)}")
+    
+    # Interpretation Guide
+    st.info("""
+    **📋 Interpretation Guide:**
+    - **p < 0.05**: Significant differences exist between countries
+    - **p ≥ 0.05**: No significant differences between countries
+    """)
 
 else:
-    st.info("👈 Please select at least one country from the sidebar to begin")
+    st.info("👈 Please select at least one country and one metric from the sidebar to begin analysis")
 
-# Data information section
-st.header("ℹ️ Data Information")
-st.markdown("""
-**Available Countries:**
-- **Benin**: benin_clean.csv
-- **Togo**: togo_clean.csv  
-- **Sierra Leone**: sierra_leone_clean.csv
+# Data Quality Information
+st.header("ℹ️ Data Quality & Information")
 
-**Note:** The app automatically detects whether your data uses 'GHI' or 'GHT' column names for irradiance data.
-""")
+col_info1, col_info2 = st.columns(2)
 
-# Footer with instructions
+with col_info1:
+    st.subheader("Available Countries & Files")
+    for country in countries:
+        st.write(f"• **{country}**: `{country.lower().replace(' ', '_')}_clean.csv`")
+
+with col_info2:
+    st.subheader("Metric Definitions")
+    metric_definitions = {
+        "GHI": "Global Horizontal Irradiance - Total solar radiation received",
+        "DNI": "Direct Normal Irradiance - Direct solar radiation",
+        "DHI": "Diffuse Horizontal Irradiance - Scattered solar radiation",
+        "Tamb": "Ambient Temperature",
+        "WS": "Wind Speed"
+    }
+    
+    for metric, definition in metric_definitions.items():
+        if metric in metrics:
+            st.write(f"• **{metric}**: {definition}")
+
+# Footer
 st.markdown("---")
-st.markdown("**Usage Instructions:**")
 st.markdown("""
-1. **Select countries** from the sidebar to compare
-2. **View irradiance distributions** in the boxplot
-3. **Explore top regions** performance
-4. **Compare metrics** across selected countries
-""")
-
-st.markdown("**Development Info:**")
-st.markdown("""
-- Built with Streamlit
-- Uses matplotlib and seaborn for visualizations
-- Reads data from CSV files in the `data/` folder
-- Supports both GHI and GHT column names
+**🔧 Features:**
+- Multi-country comparison with statistical testing
+- Interactive metric selection
+- Comprehensive statistical summaries
+- Data quality indicators
+- Professional analytics interface
 """)
