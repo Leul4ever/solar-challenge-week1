@@ -2,6 +2,8 @@ Solar Challenge - W0 (🌞 Solar Site Data Analysis & Region Ranking)
 This repository contains a complete data pipeline and EDA framework to clean, explore, and compare solar sensor datasets from multiple West African countries. The goal is to enable data-driven region ranking for solar farm expansion decisions.
 
 🧭 Project Structuresolar-challenge-week1/
+
+solar-challenge-week1/
 ├── .github/
 ├── app/                           # Streamlit Dashboard
 │   ├── __init__.py
@@ -22,6 +24,8 @@ This repository contains a complete data pipeline and EDA framework to clean, ex
 ├── .gitignore
 ├── requirements.txt               # Python dependencies
 └── README.md                      # This file
+
+
 📌 Project Objectives
 Main Goal: Profile, clean, and explore solar datasets from Benin, Togo, and Sierra Leone to support data-driven region ranking for solar development.
 
