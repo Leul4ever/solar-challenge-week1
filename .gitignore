@@ -1,5 +1,4 @@
-# Create .gitignore file
-echo "data/
+data/
 *.csv
 .ipynb_checkpoints/
 __pycache__/
@@ -15,4 +14,4 @@ venv/
 dist/
 build/
 .DS_Store
-Thumbs.db" > .gitignore
+Thumbs.db
