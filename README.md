@@ -1,48 +1,25 @@
-# Create README.md
-echo "# Solar Challenge Week 1
+## 📊 Streamlit Dashboard
 
-## Environment Setup
+An interactive web dashboard for visualizing and comparing solar energy data across countries.
 
-### Prerequisites
-- Python 3.9+
-- Git
+### Features
+- **Country Selection**: Multi-select widget to choose countries for comparison
+- **Irradiance Distribution**: Boxplots showing GHI/GHT distribution across selected countries
+- **Top Regions Table**: Display of highest-performing regions
+- **Country Metrics**: Key statistics for each selected country
 
-### Steps to Reproduce Environment
+### Local Development
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-1. **Clone the repository**
-   \`\`\`bash
-   git clone https://github.com/your-username/solar-challenge-week1.git
-   cd solar-challenge-week1
-   \`\`\`
-
-2. **Create and activate virtual environment**
-   \`\`\`bash
-   # Using venv
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\\Scripts\\activate
-   
-   # Or using conda
-   conda create -n solar-challenge python=3.9
-   conda activate solar-challenge
-   \`\`\`
-
-3. **Install dependencies**
-   \`\`\`bash
-   pip install -r requirements.txt
-   \`\`\`
-
-4. **Verify installation**
-   \`\`\`bash
-   python --version
-   pip list
-   \`\`\`
-
-### Project Structure
-- \`data/\` - Dataset directory (ignored in git)
-- \`.github/workflows/ci.yml\` - CI/CD pipeline
-- \`requirements.txt\` - Python dependencies
-- \`.gitignore\` - Git ignore rules
-
-### Branching Strategy
-- \`main\` - Production-ready code
-- \`setup-task\` - Environment setup branch" > README.md
+# Run the dashboard
+streamlit run app/main.py
+solar-challenge-week1/
+├── app/
+│   ├── __init__.py
+│   ├── main.py          # Main Streamlit application
+│   └── utils.py         # Utility functions
+├── data/                # Data files (git-ignored)
+├── notebooks/           # Jupyter notebooks for EDA
+└── requirements.txt     # Python dependencies
