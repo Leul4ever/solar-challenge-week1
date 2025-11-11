@@ -1,176 +1,159 @@
-Solar Challenge - Week 0 🌞
-Solar Site Data Analysis & Region Ranking
+Solar Challenge — Week 1
+Solar Resource Analytics, Validation, and Interactive Reporting
 
-A comprehensive data analytics pipeline for evaluating solar energy potential across West African countries to support data-driven solar farm expansion decisions.
+Overview
+This repository provides a complete, reproducible workflow to evaluate solar resource potential across West African regions (Benin, Togo, Sierra Leone). It includes data quality checks, cleaning, exploratory data analysis (EDA), statistical validation, and an interactive Streamlit dashboard for rapid comparison and insight generation.
 
-📊 Project Overview
-This project delivers a complete analytical framework for solar energy data, featuring:
+Key capabilities
+- Data ingestion, validation, and cleaning for sensor datasets (GHI, DNI, DHI, temperature, wind speed).
+- Exploratory analytics and visualization for each country.
+- Cross-country comparison with statistical testing (ANOVA, Kruskal–Wallis).
+- Interactive dashboard for stakeholders to explore findings and rankings.
 
-Data Profiling & Cleaning of solar sensor datasets
+Project structure
 
-Exploratory Data Analysis for three countries
-
-Interactive Dashboard for real-time comparisons
-
-Statistical Validation of solar potential differences
-
-Countries Analyzed: Benin, Togo, Sierra Leone
-
-🏗️ Project Architecture
-text
+```
 solar-challenge-week1/
-├── app/                 # 🎯 Streamlit Dashboard
-│   ├── main.py         # Analytics interface
-│   └── utils.py        # Data utilities
-├── notebooks/          # 📊 Jupyter Analysis
+├── app/                     # Streamlit dashboard
+│   ├── main.py              # UI/controls and high-level orchestration
+│   └── utils.py             # Data loading, preprocessing, shared utilities
+├── data/                    # Input and cleaned CSV datasets
+├── dashboard_screenshots/   # Dashboard images for README/docs
+├── notebooks/               # Country EDA and comparison notebooks
 │   ├── benin_eda.ipynb
 │   ├── togo_eda.ipynb
 │   ├── sierra_leone_eda.ipynb
 │   └── compare_countries.ipynb
-├── dashboard_screenshots/  # 🖼️ UI Documentation
-├── data/               # 📈 Cleaned Datasets
-├── scripts/            # 🔧 Utility Scripts
-└── requirements.txt    # 📦 Dependencies
-🎯 Key Deliverables
-✅ Task 1: Project Infrastructure
-Repository Setup with modular folder structure
+├── scripts/                 # Optional CLI/utilities (future automation)
+├── src/                     # Reserved for library-style modules (future growth)
+├── tests/                   # Test suite scaffolding
+├── requirements.txt         # Python dependencies
+└── README.md
+```
 
-Environment Configuration with comprehensive dependencies
+Data
+- Primary inputs: Cleaned or raw site-level CSVs in `data/` (e.g., `benin_clean.csv`, `togo_clean.csv`, `sierra_leone_clean.csv`).
+- Expected core columns: irradiance metrics (GHI, DNI, DHI), temperature, wind speed, timestamp.
+- Data quality steps include null audits, negative-value handling, outlier screening (z-score), and nighttime irradiance normalization.
 
-Git Workflow implementation with feature branching
+Environment setup (Windows/PowerShell)
 
-Documentation and code organization
-
-✅ Task 2: Data Engineering & EDA
-Data Profiling: Statistical summaries and quality assessment
-
-Data Cleaning: Outlier detection (z-score method), negative value handling
-
-Exploratory Analysis: Time series patterns, correlation studies, visual analytics
-
-Output Generation: Cleaned datasets for all three countries
-
-✅ Task 3: Comparative Analytics
-Visual Comparisons: GHI distribution boxplots across countries
-
-Statistical Summaries: Mean, median, standard deviation analysis
-
-Hypothesis Testing: ANOVA validation of solar potential differences
-
-Performance Ranking: Country benchmarking based on solar metrics
-
-✅ Bonus: Interactive Dashboard
-Multi-feature Interface: Country selection, metric comparison, statistical testing
-
-Real-time Analytics: Dynamic visualizations and performance rankings
-
-Professional UI: Clean, intuitive design for data exploration
-
-Deployment Ready: Streamlit Cloud compatible
-
-🚀 Get Started in 3 Steps
-1. Clone & Setup
-bash
+```bash
+# 1) Clone
 git clone https://github.com/Leul4ever/solar-challenge-week1.git
 cd solar-challenge-week1
-2. Install Dependencies
-bash
+
+# 2) Create and activate virtual environment
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# 3) Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
-3. Launch Dashboard
-bash
+```
+
+Running the dashboard
+
+```bash
 streamlit run app/main.py
-Access at: http://localhost:8501
+```
 
-🔬 Analytical Methodology
-Data Processing Pipeline
-Quality Assessment: Null value analysis and data validation
+Open your browser to `http://localhost:8501`.
 
-Outlier Management: Z-score detection (threshold: 3σ)
+Working with notebooks
+- Notebooks in `notebooks/` document EDA per country and cross-country comparison.
+- Ensure the virtual environment kernel is selected in your Jupyter environment for consistent dependencies.
 
-Value Correction: Night-time irradiance normalization
+Analytical methodology (summary)
+- Profiling and cleaning: null checks, negative/physically invalid values, outlier detection (z-score, default threshold 3σ).
+- Visualization: distributions, time series, correlations, boxplots, country comparisons.
+- Statistical validation: ANOVA and non-parametric Kruskal–Wallis tests to confirm differences in solar resource distributions.
 
-Feature Preservation: Maintained all core solar metrics
+Dashboard features (high level)
+- Country selection and multi-metric analysis (GHI, DNI, DHI, temperature, wind speed).
+- Real-time statistical summaries and comparison views.
+- Figures and summary tables for quick decision support.
 
-Statistical Framework
-Descriptive Analytics: Distribution analysis and summary statistics
+Coding standards and linting
+To ensure consistency and readability across the codebase, adopt the following tooling and conventions.
 
-Inferential Testing: ANOVA and Kruskal-Wallis hypothesis validation
+- Formatter: Black
+- Import sorter: isort
+- Linting: Flake8 (or Ruff as a drop-in faster alternative, if preferred)
+- Docstrings: NumPy-style docstrings for functions, classes, and modules
 
-Comparative Visualization: Boxplots, time series, correlation matrices
+Install optional dev tools:
 
-Performance Benchmarking: Country ranking based on solar metrics
+```bash
+pip install black isort flake8
+# or
+pip install ruff
+```
 
-📈 Key Findings
-Solar Potential Ranking
-Country	Avg GHI (W/m²)	Rank	Performance
-🇧🇯 Benin	236.2	🥇 1st	Highest Potential
-🇹🇬 Togo	223.9	🥈 2nd	Strong Performance
-🇸🇱 Sierra Leone	185.0	🥉 3rd	Good Potential
-Statistical Insights
-Significant Differences: ANOVA confirms varying solar potential (p < 0.05)
+Recommended commands (run at repo root):
 
-Consistent Patterns: Diurnal and seasonal trends across regions
+```bash
+# Format code
+black app scripts tests
+isort app scripts tests
 
-Metric Correlations: Strong relationships between solar parameters
+# Lint code
+flake8 app scripts tests
+# or, with Ruff
+ruff check app scripts tests
+```
 
-🎯 Dashboard Features
-Core Functionality
-Multi-Country Selection: Compare Benin, Togo, Sierra Leone
+Docstring and module-level documentation
+- Each public function/class should include a NumPy-style docstring describing purpose, parameters, returns, and raises.
+- Each module (e.g., `app/utils.py`) should begin with a brief module-level overview (what the module provides, key assumptions, and any invariants).
 
-Metric Analysis: GHI, DNI, DHI, Temperature, Wind Speed
+Example (NumPy-style):
 
-Statistical Testing: Real-time ANOVA and Kruskal-Wallis results
+```python
+def compute_daily_ghi_stats(df: pd.DataFrame) -> pd.DataFrame:
+    \"\"\"Compute daily summary statistics for GHI.
 
-Performance Rankings: Dynamic country comparison tables
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input data containing at least a 'timestamp' column and 'GHI' in W/m^2.
 
-Advanced Analytics
-Distribution Visualization: Interactive boxplots and histograms
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame indexed by date with columns for mean, median, std.
+    \"\"\"
+    # implementation
+```
 
-Time Series Analysis: Temporal pattern exploration
+Testing
+- Add unit tests under `tests/` for reusable utilities in `app/utils.py` and any new modules under `src/`.
+- Suggested stack: `pytest` with simple fixtures for small tabular test data.
 
-Summary Statistics: Comprehensive metric breakdowns
+```bash
+pip install pytest
+pytest -q
+```
 
-Data Quality Indicators: Validation and completeness metrics
+Deployment
+- The app is Streamlit-ready and can be deployed to Streamlit Community Cloud.
+- Ensure `requirements.txt` is up to date; set the app entry point to `app/main.py`.
 
-🔧 Development Workflow
-Git Strategy
-bash
-# Feature Development
-git checkout -b feature-branch
-git add .
-git commit -m "feat: descriptive message"
-git push origin feature-branch
+Screenshots
+Representative screenshots are stored under `dashboard_screenshots/` (e.g., `GHI.png`, `DNI.png`, `Tamb.png`). These illustrate core views of the dashboard and analytical outputs.
 
-# Code Review & Merge
-# Create Pull Request → Review → Merge to main
-Quality Standards
-Code Organization: Modular structure with clear separation
+Contributing
+- Use feature branches and conventional commits (e.g., `feat:`, `fix:`, `docs:`).
+- Open a pull request with a concise summary and screenshots where applicable.
+- Keep PRs focused and small for easier review.
 
-Documentation: Comprehensive comments and docstrings
+Troubleshooting
+- Streamlit fails to start: verify the virtual environment is activated and dependencies installed.
+- Encoding or path issues on Windows: prefer raw strings or `pathlib.Path`, and avoid non-ASCII filenames.
+- Data not loading: confirm expected columns exist and that CSVs are placed under `data/`.
 
-Testing: Validation of analytical methods
+License
+If this work is public, specify your license (e.g., MIT). If internal, omit or state “All rights reserved.”
 
-Version Control: Descriptive commits and branch management
-
-🌐 Deployment & Access
-Live Dashboard: [Streamlit Cloud URL]
-Source Code: https://github.com/Leul4ever/solar-challenge-week1
-Status: ✅ Production Ready
-
-💼 Business Impact
-This analysis enables:
-
-Strategic Planning: Data-driven solar farm location selection
-
-Investment Prioritization: Resource allocation based on proven potential
-
-Risk Mitigation: Statistical validation of solar resource availability
-
-Performance Optimization: Understanding regional variations for system design
-
-📞 Technical Information
-Framework: Python, Streamlit, Pandas, Scipy
-Analysis: Statistical testing, Data visualization, Time series analysis
-Deployment: Streamlit Community Cloud
-Status: Complete & Operational
-
+Acknowledgements
+This work evaluates open solar resource datasets across West African regions and is intended to support data-driven siting and planning decisions.
