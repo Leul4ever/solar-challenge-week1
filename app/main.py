@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from scipy import stats
+from urllib.error import URLError
 
 # Page configuration
 st.set_page_config(
@@ -37,57 +38,42 @@ selected_metrics = st.sidebar.multiselect(
     default=["GHI", "DNI"]
 )
 
-# Session state for uploaded data
-if "uploaded_data" not in st.session_state:
-    st.session_state["uploaded_data"] = {}
+# Remote data configuration
+DEFAULT_REMOTE_FILE_MAP = {
+    "Benin": "https://drive.google.com/uc?export=download&id=11yvYlYcIDuCSBot7buK-Xn568eH4ZrkP",
+    "Togo": "https://drive.google.com/uc?export=download&id=1RdQu-1O1Ar3D5_Ce02GSbfQ3LaaoI0iB",
+    "Sierra Leone": "https://drive.google.com/uc?export=download&id=1mnsM0smG7mBZNuNOe_exxTtgIgYSdGHx",
+}
+try:
+    secret_file_map = st.secrets["DATA_FILES"]  # type: ignore[index]
+except Exception:
+    secret_file_map = None
 
-# Sidebar uploaders for CSV files
-st.sidebar.subheader("Upload CSVs")
-with st.sidebar.expander("Upload data files (CSV)", expanded=False):
-    st.markdown(
-        "Upload one or more cleaned CSV files. "
-        "Files should be named `benin_clean.csv`, `togo_clean.csv`, and `sierra_leone_clean.csv`."
-    )
-    uploaded_files = st.file_uploader(
-        "Upload CSV data files",
-        type=["csv"],
-        accept_multiple_files=True,
-        key="uploader_all_csv"
-    )
+try:
+    secret_base_url = st.secrets["DATA_BASE_URL"]  # type: ignore[index]
+except Exception:
+    secret_base_url = ""
 
-    if uploaded_files:
-        expected_files = {
-            f"{country.lower().replace(' ', '_')}_clean.csv": country
-            for country in countries
-        }
-        for uploaded in uploaded_files:
-            filename = uploaded.name.lower()
-            if filename in expected_files:
-                country = expected_files[filename]
-                try:
-                    df_up = pd.read_csv(uploaded)
-                    st.session_state["uploaded_data"][country] = df_up
-                    st.success(f"✅ {country} data loaded from `{uploaded.name}`")
-                except Exception as e:
-                    st.error(f"❌ Failed to read `{uploaded.name}`: {e}")
-            else:
-                st.warning(
-                    f"⚠️ `{uploaded.name}` not recognized. "
-                    "Expected one of: " + ", ".join(expected_files.keys())
-                )
-
-    if st.session_state["uploaded_data"] and st.button("Clear uploaded data"):
-        st.session_state["uploaded_data"].clear()
-        st.info("Uploaded data cleared. The app will fall back to local files.")
+REMOTE_FILE_MAP = secret_file_map or DEFAULT_REMOTE_FILE_MAP
+REMOTE_BASE_URL = secret_base_url.rstrip("/") if secret_base_url else ""
 
 # Data loading function (prefers uploaded data)
 def load_data(country):
     """Load cleaned data for selected country"""
-    # Prefer uploaded data if available
-    if country in st.session_state.get("uploaded_data", {}):
-        return st.session_state["uploaded_data"][country]
-
     file_name = f"{country.lower().replace(' ', '_')}_clean.csv"
+    remote_url = REMOTE_FILE_MAP.get(country)
+    if not remote_url and REMOTE_BASE_URL:
+        remote_url = f"{REMOTE_BASE_URL}/{file_name}"
+
+    if remote_url:
+        try:
+            df_remote = pd.read_csv(remote_url)
+            return df_remote
+        except URLError as e:
+            st.warning(f"⚠️ Could not download `{remote_url}` for {country}: {e.reason}")
+        except Exception as e:
+            st.warning(f"⚠️ Unable to load remote data for {country}: {e}")
+
     file_path = f"data/{file_name}"
     
     try:
@@ -295,8 +281,6 @@ with col_info1:
     st.subheader("Available Countries & Files")
     for country in countries:
         st.write(f"• **{country}**: `{country.lower().replace(' ', '_')}_clean.csv`")
-    if st.session_state.get("uploaded_data"):
-        st.success("Uploaded data detected for: " + ", ".join(st.session_state["uploaded_data"].keys()))
 
 with col_info2:
     st.subheader("Metric Definitions")
