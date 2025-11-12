@@ -37,10 +37,56 @@ selected_metrics = st.sidebar.multiselect(
     default=["GHI", "DNI"]
 )
 
-# Data loading function
-@st.cache_data
+# Session state for uploaded data
+if "uploaded_data" not in st.session_state:
+    st.session_state["uploaded_data"] = {}
+
+# Sidebar uploaders for CSV files
+st.sidebar.subheader("Upload CSVs")
+with st.sidebar.expander("Upload data files (CSV)", expanded=False):
+    st.markdown(
+        "Upload one or more cleaned CSV files. "
+        "Files should be named `benin_clean.csv`, `togo_clean.csv`, and `sierra_leone_clean.csv`."
+    )
+    uploaded_files = st.file_uploader(
+        "Upload CSV data files",
+        type=["csv"],
+        accept_multiple_files=True,
+        key="uploader_all_csv"
+    )
+
+    if uploaded_files:
+        expected_files = {
+            f"{country.lower().replace(' ', '_')}_clean.csv": country
+            for country in countries
+        }
+        for uploaded in uploaded_files:
+            filename = uploaded.name.lower()
+            if filename in expected_files:
+                country = expected_files[filename]
+                try:
+                    df_up = pd.read_csv(uploaded)
+                    st.session_state["uploaded_data"][country] = df_up
+                    st.success(f"✅ {country} data loaded from `{uploaded.name}`")
+                except Exception as e:
+                    st.error(f"❌ Failed to read `{uploaded.name}`: {e}")
+            else:
+                st.warning(
+                    f"⚠️ `{uploaded.name}` not recognized. "
+                    "Expected one of: " + ", ".join(expected_files.keys())
+                )
+
+    if st.session_state["uploaded_data"] and st.button("Clear uploaded data"):
+        st.session_state["uploaded_data"].clear()
+        st.info("Uploaded data cleared. The app will fall back to local files.")
+
+# Data loading function (prefers uploaded data)
 def load_data(country):
     """Load cleaned data for selected country"""
+    # Prefer uploaded data if available
+    if country in st.session_state.get("uploaded_data", {}):
+        return st.session_state["uploaded_data"][country]
+
     file_name = f"{country.lower().replace(' ', '_')}_clean.csv"
     file_path = f"data/{file_name}"
     
@@ -48,7 +94,7 @@ def load_data(country):
         df = pd.read_csv(file_path)
         return df
     except FileNotFoundError:
-        st.error(f"❌ Data file not found: {file_path}")
+        st.error(f"❌ Data file not found: {file_path}. Upload a CSV in the sidebar.")
         return None
 
 # Main content
@@ -249,6 +295,8 @@ with col_info1:
     st.subheader("Available Countries & Files")
     for country in countries:
         st.write(f"• **{country}**: `{country.lower().replace(' ', '_')}_clean.csv`")
+    if st.session_state.get("uploaded_data"):
+        st.success("Uploaded data detected for: " + ", ".join(st.session_state["uploaded_data"].keys()))
 
 with col_info2:
     st.subheader("Metric Definitions")
